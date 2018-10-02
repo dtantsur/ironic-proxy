@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = ironic_proxy
+
+[report]
+ignore_errors = True
