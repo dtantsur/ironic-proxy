@@ -16,6 +16,8 @@ import flask
 from oslo_log import log
 from six.moves.urllib import parse as urlparse
 
+from ironic_proxy import conf
+
 
 app = flask.Flask('ironic-proxy')
 LOG = log.getLogger(__name__)
@@ -74,7 +76,8 @@ def versioned_root():
 
 
 def main(argv):
-    app.run(debug=True)
+    conf.load_config(sys.argv[1:])
+    app.run(debug=conf.CONF.api.debug)
 
 
 if __name__ == '__main__':
