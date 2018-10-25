@@ -78,10 +78,9 @@ def versioned_root():
 @app.route('/v1/nodes')
 def nodes():
     result = []
-    for group, adapter in conf.groups().items():
+    for group, cli in conf.groups().items():
         LOG.debug('Loading nodes from %s', group or '<default>')
-        nodes = adapter.get('/v1/nodes', raise_exc=True)
-        result.extend(nodes.json().get('nodes') or ())
+        result.extend(cli.list_nodes())
     return flask.jsonify(nodes=result)
 
 

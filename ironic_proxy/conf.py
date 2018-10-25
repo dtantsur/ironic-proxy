@@ -14,6 +14,8 @@ from keystoneauth1 import loading
 from oslo_config import cfg
 from oslo_log import log
 
+from ironic_proxy import ironic
+
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
@@ -66,7 +68,8 @@ def _load_adapter(source):
 def groups():
     global _GROUPS
     if _GROUPS is None:
-        _GROUPS = {'' if group == '_' else group: _load_adapter(source)
+        _GROUPS = {'' if group == '_' else group:
+                   ironic.Ironic(_load_adapter(source))
                    for group, source in CONF.groups.items()}
         LOG.info('Loaded groups: %s', ', '.join(_GROUPS))
     return _GROUPS
