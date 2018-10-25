@@ -75,6 +75,16 @@ def versioned_root():
     return flask.jsonify(id=v1['id'], version=v1)
 
 
+@app.route('/v1/nodes')
+def nodes():
+    result = []
+    for group, adapter in conf.groups().items():
+        LOG.debug('Loading nodes from %s', group or '<default>')
+        nodes = adapter.get('/v1/nodes', raise_exc=True)
+        result.extend(nodes.json().get('nodes') or ())
+    return flask.jsonify(nodes=result)
+
+
 def main(argv):
     conf.load_config(sys.argv[1:])
     app.run(debug=conf.CONF.api.debug)
