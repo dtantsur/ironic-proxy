@@ -26,6 +26,15 @@ class Ironic(object):
         kwargs.setdefault('raise_exc', True)
         return self._adapter.get(*args, **kwargs)
 
+    def post(self, *args, **kwargs):
+        """Issue an HTTP POST request."""
+        kwargs.setdefault('raise_exc', True)
+        return self._adapter.post(*args, **kwargs)
+
+    def create_node(self, node):
+        """Create a node."""
+        return self.post('/v1/nodes', json=node)
+
     def get_node(self, node_id):
         """Get a bare metal node."""
         return self.get('/v1/nodes/%s' % urlparse.quote(node_id, safe=''))

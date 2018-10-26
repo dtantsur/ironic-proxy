@@ -78,13 +78,24 @@ def versioned_root():
     return flask.jsonify(id=v1['id'], version=v1)
 
 
-@app.route('/v1/nodes')
+@app.route('/v1/nodes', methods=['GET', 'POST'])
 def nodes():
-    result = []
-    for group, cli in conf.groups().items():
-        LOG.debug('Loading nodes from %s', group or '<default>')
-        result.extend(cli.list_nodes())
-    return flask.jsonify(nodes=result)
+    if flask.request.method == 'GET':
+        result = []
+        for group, cli in conf.groups().items():
+            LOG.debug('Loading nodes from %s', group or '<default>')
+            result.extend(cli.list_nodes())
+        return flask.jsonify(nodes=result)
+    else:
+        body = flask.request.get_json(force=True)
+        group = body.get('conductor_group', '')
+        try:
+            cli = conf.groups()[group]
+        except IndexError:
+            raise common.Error('No conductors in group {group}',
+                               group=group or '<default>')
+        node = cli.create_node(body)
+        return flask.jsonify(node)
 
 
 @app.route('/v1/nodes/<node>')
