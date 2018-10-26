@@ -88,13 +88,17 @@ def nodes():
         return flask.jsonify(node)
 
 
-@app.route('/v1/nodes/<node>')
+@app.route('/v1/nodes/<node>', methods=['GET', 'DELETE'])
 def node(node):
-    result = groups.get_node(node)
-    if result is None:
-        raise common.NotFound("Node {node} was not found", node=node)
+    if flask.request.method == 'GET':
+        result = groups.get_node(node)
+        if result is None:
+            raise common.NotFound("Node {node} was not found", node=node)
 
-    return flask.jsonify(node=result)
+        return flask.jsonify(node=result)
+    else:
+        groups.delete_node(node)
+        return '', 204
 
 
 def main(argv):

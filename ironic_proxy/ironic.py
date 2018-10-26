@@ -31,6 +31,11 @@ class Ironic(object):
         kwargs.setdefault('raise_exc', True)
         return self._adapter.post(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        """Issue an HTTP DELETE request."""
+        kwargs.setdefault('raise_exc', True)
+        return self._adapter.delete(*args, **kwargs)
+
     def create_node(self, node):
         """Create a node."""
         return self.post('/v1/nodes', json=node).json()
@@ -50,3 +55,7 @@ class Ironic(object):
     def list_nodes(self):
         """List bare metal nodes."""
         return self.get('/v1/nodes').json().get('nodes', [])
+
+    def delete_node(self, node_id):
+        """Delete a node."""
+        self.delete('/v1/nodes/%s' % urlparse.quote(node_id, safe=''))
