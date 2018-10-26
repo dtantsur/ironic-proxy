@@ -10,17 +10,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from multiprocessing import pool
 import sys
 
 import flask
 from oslo_log import log
 from six.moves.urllib import parse as urlparse
 
+from ironic_proxy import common
 from ironic_proxy import conf
 
 
 app = flask.Flask('ironic-proxy')
 LOG = log.getLogger(__name__)
+_POOL = None
 
 
 @app.errorhandler(Exception)
@@ -84,8 +87,23 @@ def nodes():
     return flask.jsonify(nodes=result)
 
 
-def main(argv):
+@app.route('/v1/nodes/<node>')
+def node(node):
+    for result in _POOL.imap_unordered(lambda cli: cli.find_node(node),
+                                       conf.groups().values()):
+        if result is not None:
+            return flask.jsonify(node=result)
+    raise common.NotFound("Node {node} was not found", node=node)
+
+
+def configure(argv):
+    global _POOL
     conf.load_config(sys.argv[1:])
+    _POOL = pool.ThreadPool()
+
+
+def main(argv):
+    configure(argv)
     app.run(debug=conf.CONF.api.debug)
 
 

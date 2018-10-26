@@ -14,6 +14,11 @@
 class Error(Exception):
     def __init__(self, message, code=400, **kwargs):
         if kwargs:
-            message = message.format(kwargs)
+            message = message.format(**kwargs)
         super(Error, self).__init__(message)
         self.code = code
+
+
+class NotFound(Error):
+    def __init__(self, message, **kwargs):
+        super(NotFound, self).__init__(message, code=404, **kwargs)

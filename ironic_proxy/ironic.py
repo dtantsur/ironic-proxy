@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from six.moves.urllib import parse as urlparse
+
 
 class Ironic(object):
     """A simple ironic client."""
@@ -23,6 +25,17 @@ class Ironic(object):
         """Issue an HTTP GET request."""
         kwargs.setdefault('raise_exc', True)
         return self._adapter.get(*args, **kwargs)
+
+    def get_node(self, node_id):
+        """Get a bare metal node."""
+        return self.get('/v1/nodes/%s' % urlparse.quote(node_id, safe=''))
+
+    def find_node(self, node):
+        """Find a bare metal node or return None."""
+        try:
+            return self.get_node(node)
+        except Exception:
+            return None
 
     def list_nodes(self):
         """List bare metal nodes."""
