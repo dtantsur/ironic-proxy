@@ -10,7 +10,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from multiprocessing import pool
 import sys
 
 import flask
@@ -19,11 +18,11 @@ from six.moves.urllib import parse as urlparse
 
 from ironic_proxy import common
 from ironic_proxy import conf
+from ironic_proxy import groups
 
 
 app = flask.Flask('ironic-proxy')
 LOG = log.getLogger(__name__)
-_POOL = None
 
 
 @app.errorhandler(Exception)
@@ -81,40 +80,25 @@ def versioned_root():
 @app.route('/v1/nodes', methods=['GET', 'POST'])
 def nodes():
     if flask.request.method == 'GET':
-        result = []
-        for group, cli in conf.groups().items():
-            LOG.debug('Loading nodes from %s', group or '<default>')
-            result.extend(cli.list_nodes())
-        return flask.jsonify(nodes=result)
+        nodes = groups.list_nodes()
+        return flask.jsonify(nodes=nodes)
     else:
         body = flask.request.get_json(force=True)
-        group = body.get('conductor_group', '')
-        try:
-            cli = conf.groups()[group]
-        except IndexError:
-            raise common.Error('No conductors in group {group}',
-                               group=group or '<default>')
-        node = cli.create_node(body)
+        node = groups.create_node(body)
         return flask.jsonify(node)
 
 
 @app.route('/v1/nodes/<node>')
 def node(node):
-    for result in _POOL.imap_unordered(lambda cli: cli.find_node(node),
-                                       conf.groups().values()):
-        if result is not None:
-            return flask.jsonify(node=result)
-    raise common.NotFound("Node {node} was not found", node=node)
+    result = groups.get_node(node)
+    if result is None:
+        raise common.NotFound("Node {node} was not found", node=node)
 
-
-def configure(argv):
-    global _POOL
-    conf.load_config(sys.argv[1:])
-    _POOL = pool.ThreadPool()
+    return flask.jsonify(node=result)
 
 
 def main(argv):
-    configure(argv)
+    conf.load_config(sys.argv[1:])
     app.run(debug=conf.CONF.api.debug)
 
 
