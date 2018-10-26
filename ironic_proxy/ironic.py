@@ -33,11 +33,12 @@ class Ironic(object):
 
     def create_node(self, node):
         """Create a node."""
-        return self.post('/v1/nodes', json=node)
+        return self.post('/v1/nodes', json=node).json()
 
     def get_node(self, node_id):
         """Get a bare metal node."""
-        return self.get('/v1/nodes/%s' % urlparse.quote(node_id, safe=''))
+        return self.get('/v1/nodes/%s' % urlparse.quote(node_id,
+                                                        safe='')).json()
 
     def find_node(self, node):
         """Find a bare metal node or return None."""
