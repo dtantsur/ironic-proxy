@@ -32,9 +32,7 @@ Implemented API:
 * Version discovery.
 * Node creating, listing, getting and deleting.
 
-Implemented microversions:
-
-* 1.1 (the default)
+Pretends to support the set of microversions common between all sources.
 
 Authentication: **NO**
 

@@ -10,9 +10,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import flask
 from six.moves.urllib import parse as urlparse
 
 
+VERSION_HEADER = 'X-OpenStack-Ironic-API-Version'
 MIN_VERSION_HEADER = 'X-OpenStack-Ironic-API-Minimum-Version'
 MAX_VERSION_HEADER = 'X-OpenStack-Ironic-API-Maximum-Version'
 
@@ -25,61 +27,37 @@ class Ironic(object):
             adapter.service_type = 'baremetal'
         self._adapter = adapter
 
-    def get(self, *args, **kwargs):
-        """Issue an HTTP GET request."""
+    def request(self, url, *args, **kwargs):
+        """Issue a request."""
         kwargs.setdefault('raise_exc', True)
-        return self._adapter.get(*args, **kwargs)
-
-    def post(self, *args, **kwargs):
-        """Issue an HTTP POST request."""
-        kwargs.setdefault('raise_exc', True)
-        return self._adapter.post(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        """Issue an HTTP DELETE request."""
-        kwargs.setdefault('raise_exc', True)
-        return self._adapter.delete(*args, **kwargs)
+        if url != '/':
+            headers = kwargs.setdefault('headers', {})
+            try:
+                mversion = getattr(flask.request, 'microversion', None)
+            except RuntimeError:
+                pass
+            else:
+                if mversion is not None:
+                    headers.setdefault(VERSION_HEADER, '%s.%s' % mversion)
+        return self._adapter.request(url, *args, **kwargs)
 
     def get_microversions(self):
         """Get the supported microversions."""
-        resp = self.get('/')
-        version = resp.json()
-        if 'default_version' in version:
-            # Unversioned endpoint
-            version = version['default_version']
-        elif 'version' in version:
-            # Versioned endpoint - new style
-            version = version['version']
+        data = self._adapter.get_endpoint_data()
+
+        if data.min_microversion and data.max_microversion:
+            return data.min_microversion, data.max_microversion
         else:
-            # NOTE(dtantsur): old ironic did not expose the microversions
-            # properly in the versioned endpoint response.
-            version = {
-                'version': resp.headers.get(MAX_VERSION_HEADER),
-                'min_version': resp.headers.get(MIN_VERSION_HEADER),
-            }
-
-        max_version = version.get('version')
-        min_version = version.get('min_version')
-        if not max_version or not min_version:
             return (1, 1), (1, 1)
-
-        try:
-            min_version = tuple(int(x) for x in min_version.split('.', 1))
-            max_version = tuple(int(x) for x in max_version.split('.', 1))
-        except Exception as exc:
-            raise RuntimeError("Cannot convert string microversions to tuples."
-                               " %s: %s" % (exc.__class__.__name__, exc))
-
-        return min_version, max_version
 
     def create_node(self, node):
         """Create a node."""
-        return self.post('/v1/nodes', json=node).json()
+        return self.request('/v1/nodes', 'POST', json=node).json()
 
     def get_node(self, node_id):
         """Get a bare metal node."""
-        return self.get('/v1/nodes/%s' % urlparse.quote(node_id,
-                                                        safe='')).json()
+        url = '/v1/nodes/%s' % urlparse.quote(node_id, safe='')
+        return self.request(url, 'GET').json()
 
     def find_node(self, node):
         """Find a bare metal node or return None."""
@@ -90,8 +68,9 @@ class Ironic(object):
 
     def list_nodes(self):
         """List bare metal nodes."""
-        return self.get('/v1/nodes').json().get('nodes', [])
+        return self.request('/v1/nodes', 'GET').json().get('nodes', [])
 
     def delete_node(self, node_id):
         """Delete a node."""
-        self.delete('/v1/nodes/%s' % urlparse.quote(node_id, safe=''))
+        url = '/v1/nodes/%s' % urlparse.quote(node_id, safe='')
+        self.request(url, 'DELETE')

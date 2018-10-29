@@ -64,6 +64,31 @@ def _api_version(path):
     }
 
 
+@app.before_request
+def check_microversion():
+    if flask.request.path == '/':
+        return
+
+    mversion = flask.request.headers.get(ironic.VERSION_HEADER)
+    if not mversion:
+        return
+
+    try:
+        mversion = tuple(int(x) for x in mversion.split('.', 1))
+    except Exception:
+        LOG.debug('Invalid microversion requested: %s',
+                  mversion, exc_info=True)
+        return handle_error(common.Error('Invalid microversion requested'))
+
+    minv, maxv = groups.microversions()
+    if mversion < minv or mversion > maxv:
+        return handle_error(common.Error(
+            'Incompatible microversion: %s not between %s and %s' %
+            (mversion, minv, maxv), code=406))
+
+    flask.request.microversion = mversion
+
+
 @app.after_request
 def report_microversions(resp):
     if flask.request.path == '/':
