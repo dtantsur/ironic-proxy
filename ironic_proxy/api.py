@@ -19,6 +19,7 @@ from six.moves.urllib import parse as urlparse
 from ironic_proxy import common
 from ironic_proxy import conf
 from ironic_proxy import groups
+from ironic_proxy import ironic
 
 
 app = flask.Flask('ironic-proxy')
@@ -53,13 +54,25 @@ def _url(path):
 
 
 def _api_version(path):
+    minv, maxv = groups.microversions()
     return {
         "id": "v1",
         "status": "CURRENT",
-        "min_version": "1.1",
-        "version": "1.46",
+        "min_version": "%d.%d" % minv,
+        "version": "%d.%d" % maxv,
         "links": [{'href': _url(path), 'rel': 'self'}]
     }
+
+
+@app.after_request
+def report_microversions(resp):
+    if flask.request.path == '/':
+        return resp
+
+    minv, maxv = groups.microversions()
+    resp.headers.add(ironic.MIN_VERSION_HEADER, "%s.%s" % minv)
+    resp.headers.add(ironic.MAX_VERSION_HEADER, "%s.%s" % maxv)
+    return resp
 
 
 @app.route('/')

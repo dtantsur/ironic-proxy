@@ -13,6 +13,10 @@
 from six.moves.urllib import parse as urlparse
 
 
+MIN_VERSION_HEADER = 'X-OpenStack-Ironic-API-Minimum-Version'
+MAX_VERSION_HEADER = 'X-OpenStack-Ironic-API-Maximum-Version'
+
+
 class Ironic(object):
     """A simple ironic client."""
 
@@ -35,6 +39,38 @@ class Ironic(object):
         """Issue an HTTP DELETE request."""
         kwargs.setdefault('raise_exc', True)
         return self._adapter.delete(*args, **kwargs)
+
+    def get_microversions(self):
+        """Get the supported microversions."""
+        resp = self.get('/')
+        version = resp.json()
+        if 'default_version' in version:
+            # Unversioned endpoint
+            version = version['default_version']
+        elif 'version' in version:
+            # Versioned endpoint - new style
+            version = version['version']
+        else:
+            # NOTE(dtantsur): old ironic did not expose the microversions
+            # properly in the versioned endpoint response.
+            version = {
+                'version': resp.headers.get(MAX_VERSION_HEADER),
+                'min_version': resp.headers.get(MIN_VERSION_HEADER),
+            }
+
+        max_version = version.get('version')
+        min_version = version.get('min_version')
+        if not max_version or not min_version:
+            return (1, 1), (1, 1)
+
+        try:
+            min_version = tuple(int(x) for x in min_version.split('.', 1))
+            max_version = tuple(int(x) for x in max_version.split('.', 1))
+        except Exception as exc:
+            raise RuntimeError("Cannot convert string microversions to tuples."
+                               " %s: %s" % (exc.__class__.__name__, exc))
+
+        return min_version, max_version
 
     def create_node(self, node):
         """Create a node."""

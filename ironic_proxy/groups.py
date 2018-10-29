@@ -21,6 +21,7 @@ from ironic_proxy import conf
 LOG = log.getLogger(__name__)
 _POOL = None
 _CACHE = None
+_MVERSIONS = None
 
 
 def _imap_unordered(func, items):
@@ -81,6 +82,22 @@ def _cache_nodes(nodes, group):
             LOG.info('Node %s found in group %s',
                      node['uuid'], group or '<default>')
             _CACHE[node['uuid']] = group
+
+
+def microversions():
+    global _MVERSIONS
+    if _MVERSIONS is None:
+        curr_min = (1, 1)
+        curr_max = (1, 999)
+        for minv, maxv in _imap_unordered(
+                lambda cli: cli.get_microversions(),
+                conf.groups().values()):
+            curr_min = max(curr_min, minv)
+            curr_max = min(curr_max, maxv)
+        LOG.info('Will support microversion range %s to %s',
+                 curr_min, curr_max)
+        _MVERSIONS = curr_min, curr_max
+    return _MVERSIONS
 
 
 def create_node(node):
