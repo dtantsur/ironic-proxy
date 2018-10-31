@@ -36,6 +36,76 @@ Pretends to support the set of microversions common between all sources.
 
 Authentication: **NO**
 
+Architecture
+------------
+
+This one of the possible *Edge* architectures with *ironic-proxy*:
+
+::
+
+                             baremetal API    image API
+                                  +               +
+            Hub                   |               |
+            +------------------------------------------+
+            |                     |               |    |
+            |                     v               v    |
+            | keystone <---+ ironic-proxy +---> glance |
+            |                   +                 ^    |
+            +------------------------------------------+
+                                |                 |
+       +<------------+<---------+  +------------->+
+       |             |             |
+ +-------------------------------------+ +-------------------------------------+
+ |     |             |             |   | |                                     |
+ |     v             v             +   | |                                     |
+ | keystone <---+ ir-api +---> ir-cond | | keystone <---+ ir-api +---> ir-cond |
+ |                   ^            ^    | |                                     |
+ |    local DHCP     |            |    | |                                     |
+ |        ^          |            |    | |                                     |
+ +-------------------------------------+ +-------------------------------------+
+ Edge     |          |            |      Edge
+          +<-------+ | +--------->+
+                   | | |
+       +-------+ +-+-+-+-+ +-------+          +-------+ +-------+ +-------+
+       |       | |       | |       |          |       | |       | |       |
+       +-------+ +-------+ +-------+          +-------+ +-------+ +-------+
+       Nodes                                  Nodes
+
+Notes:
+
+* The *Hub* and *Edge* locations do not share message queue and database.
+
+* The Network service (neutron) is not present, since it would require
+  stretching message queue and database between the locations. Instead,
+  a local DHCP server is used, and ironic is configured with the *noop* network
+  interface.
+
+  .. note::
+      A tool like cloud-init or os-net-config_ can be used for post-deploy
+      networking configuration.
+
+* The Compute service (nova) can be used in theory, but its dependency on
+  neutron is an issue. Neutron can be deployed and used by nova, but no
+  networking configuration will be coming from it.
+
+  The Metadata API cannot be used, a *configdrive* must be used instead.
+
+* Each location has its own Identity service (keystone) installation.
+
+* However, ironic-conductor at each *Edge* is configured to access the Image
+  service (glance) at the *Hub* location.
+
+  .. note::
+      This is possible because ironic configures credentials for each service
+      it uses separately.
+
+  With the *iscsi* deploy interface, images will be served from the
+  *ironic-conductor* location via iSCSI.
+
+  With the *direct* deploy interface, ironic has to be configured with
+  ``image_download_source=http`` to make sure images are served from the local
+  HTTP server.
+
 Configuration
 =============
 
@@ -71,3 +141,5 @@ The proxy currently only consists of only one WSGI service. You can run it with
 non-production development server via::
 
    tox -evenv -- python -m ironic_proxy.api --config-file /path/to/config/file
+
+.. _os-net-config: https://github.com/openstack/os-net-config
