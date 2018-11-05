@@ -129,6 +129,10 @@ def nodes():
 @app.route('/v1/nodes/<node>', methods=['GET', 'PATCH', 'DELETE'])
 def node(node):
     if flask.request.method == 'GET':
+        if node == 'detail':
+            nodes = groups.list_nodes({'detail': True})
+            return flask.jsonify(nodes=nodes)
+
         result = groups.get_node(node)
         if result is None:
             raise common.NotFound("Node {node} was not found", node=node)

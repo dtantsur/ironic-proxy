@@ -111,11 +111,13 @@ def get_node(node_id):
     return _find_node(node_id)[0]
 
 
-def list_nodes():
+def list_nodes(params=None):
+    if params is None:
+        params = flask.request.args
     result = []
     for group, cli in conf.groups().items():
         LOG.debug('Loading nodes from %s', group or '<default>')
-        nodes = cli.list_nodes()
+        nodes = cli.list_nodes(params=params)
         _cache_nodes(nodes, group)
         result.extend(nodes)
     return result

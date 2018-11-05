@@ -66,6 +66,12 @@ class Ironic(object):
         except Exception:
             return None
 
-    def list_nodes(self):
+    def list_nodes(self, params=None):
         """List bare metal nodes."""
-        return self.request('/v1/nodes', 'GET').json().get('nodes', [])
+        params = params or {}
+        if params.pop('detail', False):
+            url = '/v1/nodes/detail'
+        else:
+            url = '/v1/nodes'
+        return self.request(url, 'GET',
+                            params=params).json().get('nodes', [])
