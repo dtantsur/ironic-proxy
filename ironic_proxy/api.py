@@ -28,9 +28,9 @@ LOG = log.getLogger(__name__)
 
 @app.errorhandler(Exception)
 def handle_error(exc):
-    code = getattr(exc, 'code', 500)
+    code = getattr(exc, 'code', getattr(exc, 'http_status', 500))
     if code < 500:
-        LOG.debug('Client error %d: %s', exc.code, exc)
+        LOG.debug('Client error %d: %s', code, exc)
         body = {
             'faultstring': str(exc),
             'faultcode': 'Client',
