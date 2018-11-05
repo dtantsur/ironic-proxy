@@ -12,6 +12,7 @@
 
 from multiprocessing import pool
 
+import flask
 from oslo_log import log
 
 from ironic_proxy import common
@@ -120,7 +121,20 @@ def list_nodes():
     return result
 
 
-def delete_node(node_id):
+def proxy_request(node_id, url=None, method=None, params=None, body=None,
+                  json_response=True):
     group = _find_node(node_id)[1]
     cli = _source(group)
-    cli.delete_node(node_id)
+
+    if url is None:
+        url = flask.request.path
+    if method is None:
+        method = flask.request.method
+    if params is None:
+        params = flask.request.args
+    if body is None:
+        body = flask.request.get_json(force=True, silent=True)
+
+    resp = cli.request(url, method, params=params, json=body)
+    if json_response:
+        return resp.json()

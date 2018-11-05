@@ -69,8 +69,3 @@ class Ironic(object):
     def list_nodes(self):
         """List bare metal nodes."""
         return self.request('/v1/nodes', 'GET').json().get('nodes', [])
-
-    def delete_node(self, node_id):
-        """Delete a node."""
-        url = '/v1/nodes/%s' % urlparse.quote(node_id, safe='')
-        self.request(url, 'DELETE')

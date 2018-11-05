@@ -126,7 +126,7 @@ def nodes():
         return flask.jsonify(node)
 
 
-@app.route('/v1/nodes/<node>', methods=['GET', 'DELETE'])
+@app.route('/v1/nodes/<node>', methods=['GET', 'PATCH', 'DELETE'])
 def node(node):
     if flask.request.method == 'GET':
         result = groups.get_node(node)
@@ -135,8 +135,12 @@ def node(node):
 
         return flask.jsonify(node=result)
     else:
-        groups.delete_node(node)
-        return '', 204
+        has_body = flask.request.method == 'PATCH'
+        body = groups.proxy_request(node, json_response=has_body)
+        if body:
+            return flask.jsonify(body)
+        else:
+            return '', 204
 
 
 def main(argv):
