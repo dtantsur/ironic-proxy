@@ -147,6 +147,17 @@ def node(node):
             return '', 204
 
 
+@app.route('/v1/nodes/<node>/<path:path>',
+           methods=['GET', 'PUT', 'POST', 'DELETE'])
+def node_action(node, path):
+    has_body = flask.request.method == 'GET'
+    body = groups.proxy_request(node, json_response=has_body)
+    if body:
+        return flask.jsonify(body)
+    else:
+        return '', 204
+
+
 def main(argv):
     conf.load_config(sys.argv[1:])
     app.run(debug=conf.CONF.api.debug)
