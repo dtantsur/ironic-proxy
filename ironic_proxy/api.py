@@ -23,6 +23,7 @@ from ironic_proxy import ironic
 
 
 app = flask.Flask('ironic-proxy')
+app.url_map.strict_slashes = False
 LOG = log.getLogger(__name__)
 
 
