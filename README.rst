@@ -159,8 +159,35 @@ Use the following to disable authentication (**dangerous**):
 Running
 =======
 
-The proxy currently only consists of only one WSGI service. You can run it with
-non-production development server via::
+Production
+----------
+
+Run the WSGI application ``ironic_proxy.wsgi:application``. For example, with
+*uwsgi* create the following configuration file:
+
+.. code-block:: ini
+
+   [uwsgi]
+   module = ironic_proxy.wsgi
+   ; Adjust to listen on correct host/port
+   http = 127.0.0.1:5000
+   ; Tell ironic-proxy the location of the configuration file
+   pyargv = --config-file /path/to/config/file
+   ; Required since ironic-proxy itself uses threads
+   enable-threads = true
+   ; Adjust number of processes and/or threads as needed
+   processes = 4
+   ; Set if you're running ironic-proxy from a virtualenv
+   ;virtualenv = /path/to/virtualenv
+
+Then starts with::
+
+    uwsgi /path/to/uwsgi/config
+
+Development
+-----------
+
+You can run *ironic-proxy* with non-production development server via::
 
    tox -evenv -- python -m ironic_proxy.api --config-file /path/to/config/file
 

@@ -173,11 +173,15 @@ def node_action(node, path):
         return '', 204
 
 
-def main(argv):
+def init(argv):
     conf.load_config(sys.argv[1:])
     if conf.CONF.api.auth_strategy == 'keystone':
         app.wsgi_app = auth_token.AuthProtocol(app.wsgi_app,
                                                {'delay_auth_decision': True})
+
+
+def main(argv):
+    init(argv)
     app.run(debug=conf.CONF.api.debug)
 
 
