@@ -65,7 +65,7 @@ class Ironic(object):
 
     def list_nodes(self, params=None, microversion=None):
         """List bare metal nodes."""
-        params = params or {}
+        params = dict(params or {})
         if params.pop('detail', False):
             url = '/v1/nodes/detail'
         else:
