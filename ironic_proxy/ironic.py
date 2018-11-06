@@ -11,12 +11,14 @@
 # under the License.
 
 import flask
+from oslo_log import log
 from six.moves.urllib import parse as urlparse
 
 
 VERSION_HEADER = 'X-OpenStack-Ironic-API-Version'
 MIN_VERSION_HEADER = 'X-OpenStack-Ironic-API-Minimum-Version'
 MAX_VERSION_HEADER = 'X-OpenStack-Ironic-API-Maximum-Version'
+LOG = log.getLogger(__name__)
 
 
 class Ironic(object):
@@ -27,7 +29,7 @@ class Ironic(object):
             adapter.service_type = 'baremetal'
         self._adapter = adapter
 
-    def request(self, url, *args, **kwargs):
+    def request(self, url, method, **kwargs):
         """Issue a request."""
         kwargs.setdefault('raise_exc', True)
         if url != '/':
@@ -39,7 +41,8 @@ class Ironic(object):
             else:
                 if mversion is not None:
                     headers.setdefault(VERSION_HEADER, '%s.%s' % mversion)
-        return self._adapter.request(url, *args, **kwargs)
+        LOG.debug('%s %s %s', method, url, kwargs)
+        return self._adapter.request(url, method, **kwargs)
 
     def get_microversions(self):
         """Get the supported microversions."""
