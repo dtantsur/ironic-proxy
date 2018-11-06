@@ -34,8 +34,6 @@ Implemented API:
 
 Pretends to support the set of microversions common between all sources.
 
-Authentication: **NO**
-
 Architecture
 ------------
 
@@ -133,6 +131,30 @@ Then define the credentials to access every location, for example:
    password = pa$$w0rd
    project_name = service
    project_domain_id = default
+
+Finally, configure API for authentication if needed:
+
+.. code-block:: ini
+
+   [api]
+   auth_strategy = keystone
+
+   [keystone_authtoken]
+   auth_type = password
+   auth_url = http://192.168.42.1/identity
+   www_authenticate_uri = http://192.168.42.1/identity
+   username = ironic
+   user_domain_id = default
+   password = pa$$w0rd
+   project_name = service
+   project_domain_id = default
+
+Use the following to disable authentication (**dangerous**):
+
+.. code-block:: ini
+
+   [api]
+   auth_strategy = none
 
 Running
 =======

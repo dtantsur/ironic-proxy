@@ -13,6 +13,7 @@
 import sys
 
 import flask
+from keystonemiddleware import auth_token
 from oslo_log import log
 from six.moves.urllib import parse as urlparse
 
@@ -63,6 +64,18 @@ def _api_version(path):
         "version": "%d.%d" % maxv,
         "links": [{'href': _url(path), 'rel': 'self'}]
     }
+
+
+@app.before_request
+def check_auth():
+    if flask.request.path.rstrip('/') in ('', '/v1'):
+        return
+
+    if conf.CONF.api.auth_strategy == 'none':
+        return
+
+    if flask.request.headers.get('X-Identity-Status', '').lower() == 'invalid':
+        return handle_error(common.Error('Authentication required', code=401))
 
 
 @app.before_request
@@ -162,6 +175,9 @@ def node_action(node, path):
 
 def main(argv):
     conf.load_config(sys.argv[1:])
+    if conf.CONF.api.auth_strategy == 'keystone':
+        app.wsgi_app = auth_token.AuthProtocol(app.wsgi_app,
+                                               {'delay_auth_decision': True})
     app.run(debug=conf.CONF.api.debug)
 
 

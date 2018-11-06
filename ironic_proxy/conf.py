@@ -31,6 +31,10 @@ api_opts = [
     cfg.BoolOpt('debug',
                 default=False,
                 help='Enable API-level debugging (dangerous!)'),
+    cfg.StrOpt('auth_strategy',
+               default='keystone',
+               choices=['keystone', 'none'],
+               help='Strategy to authenticate API requests'),
 ]
 
 
