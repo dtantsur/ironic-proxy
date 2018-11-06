@@ -138,7 +138,7 @@ def node(node):
         if result is None:
             raise common.NotFound("Node {node} was not found", node=node)
 
-        return flask.jsonify(node=result)
+        return flask.jsonify(result)
     else:
         has_body = flask.request.method == 'PATCH'
         body = groups.proxy_request(node, json_response=has_body)
