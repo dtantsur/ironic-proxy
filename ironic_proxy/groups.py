@@ -52,9 +52,20 @@ def _find_node(node_id):
     except KeyError:
         # Node unknown, let's find it
         LOG.debug('Polling all sources to find node %s', node_id)
-        for node, group in _imap_unordered(
-                lambda args: (args[1].find_node(node_id), args[0]),
-                conf.groups().items()):
+
+        # NOTE(dtantsur): we're using threads, so flask.request won't be
+        # available. Pass the microversion explicitly.
+        microversion = getattr(flask.request, 'microversion', None)
+
+        def _find(args):
+            group, cli = args
+            try:
+                node = cli.get_node(node_id, microversion=microversion)
+            except Exception:
+                node = None
+            return node, group
+
+        for node, group in _imap_unordered(_find, conf.groups().items()):
             if node is None:
                 continue
 
@@ -66,7 +77,7 @@ def _find_node(node_id):
     else:
         # Node is known, just fetch it
         cli = _source(group)
-        node = cli.find_node(node_id)
+        node = cli.get_node(node_id)
 
     if node is None:
         raise common.NotFound('Node {node} was not found', node=node_id)

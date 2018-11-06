@@ -29,20 +29,21 @@ class Ironic(object):
             adapter.service_type = 'baremetal'
         self._adapter = adapter
 
-    def request(self, url, method, **kwargs):
+    def request(self, url, method, microversion=None, **kwargs):
         """Issue a request."""
         kwargs.setdefault('raise_exc', True)
-        if url != '/':
-            headers = kwargs.setdefault('headers', {})
+        if url != '/' and not microversion:
             try:
                 mversion = getattr(flask.request, 'microversion', None)
             except RuntimeError:
                 pass
             else:
                 if mversion is not None:
-                    headers.setdefault(VERSION_HEADER, '%s.%s' % mversion)
-        LOG.debug('%s %s %s', method, url, kwargs)
-        return self._adapter.request(url, method, **kwargs)
+                    microversion = '%s.%s' % mversion
+        LOG.debug('%s %s (API version %s) %s', method, url, microversion,
+                  kwargs.get('params', {}))
+        return self._adapter.request(url, method, microversion=microversion,
+                                     **kwargs)
 
     def get_microversions(self):
         """Get the supported microversions."""
@@ -57,24 +58,17 @@ class Ironic(object):
         """Create a node."""
         return self.request('/v1/nodes', 'POST', json=node).json()
 
-    def get_node(self, node_id):
+    def get_node(self, node_id, microversion=None):
         """Get a bare metal node."""
         url = '/v1/nodes/%s' % urlparse.quote(node_id, safe='')
-        return self.request(url, 'GET').json()
+        return self.request(url, 'GET', microversion=microversion).json()
 
-    def find_node(self, node):
-        """Find a bare metal node or return None."""
-        try:
-            return self.get_node(node)
-        except Exception:
-            return None
-
-    def list_nodes(self, params=None):
+    def list_nodes(self, params=None, microversion=None):
         """List bare metal nodes."""
         params = params or {}
         if params.pop('detail', False):
             url = '/v1/nodes/detail'
         else:
             url = '/v1/nodes'
-        return self.request(url, 'GET',
-                            params=params).json().get('nodes', [])
+        return self.request(url, 'GET', params=params,
+                            microversion=microversion).json().get('nodes', [])
