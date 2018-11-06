@@ -130,7 +130,8 @@ def nodes():
 def node(node):
     if flask.request.method == 'GET':
         if node == 'detail':
-            nodes = groups.list_nodes({'detail': True})
+            params = dict(flask.request.args, detail=True)
+            nodes = groups.list_nodes(params)
             return flask.jsonify(nodes=nodes)
 
         result = groups.get_node(node)
