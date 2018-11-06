@@ -30,7 +30,7 @@ Status
 Implemented API:
 
 * Version discovery.
-* Node creating, listing, getting and deleting.
+* All nodes operations.
 
 Pretends to support the set of microversions common between all sources.
 
